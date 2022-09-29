@@ -1,20 +1,28 @@
 
 
 #!/usr/bin/env bash
+# Configure your domain zone so that the subdomain www points to your
+# load-balancer IP (lb-01). Let’s also add other subdomains to make our
+# life easier, and write a Bash script that will display information
+# about subdomains.
 
-#display informaion on subdomains
+# if [ -z "$1" ]; then
+#     exit
+# fi
 
-sub_info ()
+myArray=("www" "lb-01" "web-01" "web-02")
+
+
+get_and_print ()
 {
-    domain="$1"
-    subdomain="$2"
-    dig "$subdomain.$domain" | awk '/ANSWER SECTION:/{getline; printf "The subdomain %s is a %s record and points to %s\n", var, $4, $5}' var="$subdomain"
+    output=$(dig @8.8.8.8 "$2"."$1" | grep -A1 'ANSWER SECTION:' | tail -1)
+    echo "The subdomain $2 is a $(echo "$output" | awk '{print $4}') record and points to $(echo "$output" | awk '{print $5}')"
 }
 
-for subdomain in "www" "lb-01" "web-01" "web-02"
-do
-    if [ -z "$2" ] || [ "$2" == "$subdomain" ] ;
-    then
-	sub_info "$1" "$subdomain"
-    fi
-done
+if [ -z "$2" ]; then
+    for str in "${myArray[@]}"; do
+        get_and_print "$1" "$str"
+    done
+else
+    get_and_print "$1" "$2"
+fi
